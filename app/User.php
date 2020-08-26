@@ -2,38 +2,62 @@
 
 namespace App;
 
+use App\Contracts\Scopes\WithRequestQueryBuilder;
+use Facade\Ignition\QueryRecorder\Query;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
+use Spatie\QueryBuilder\AllowedInclude;
+use Spatie\QueryBuilder\QueryBuilder;
 
-class User extends Authenticatable
+class User extends Model implements WithRequestQueryBuilder
 {
-    use Notifiable;
-
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'first_name', 'second_name', 'family_name', 'uuid', 'accepted'
     ];
 
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
-     */
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
-
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        'accepted' => 'boolean'
     ];
+
+    public function ownUuid()
+    {
+        return $this->hasOne(Uuid::class, 'uuid', 'uuid');
+    }
+
+    public function scopeAccepted(Builder $query)
+    {
+        return $query->where('accepted', true);
+    }
+
+    public function scopeRejected(Builder $query)
+    {
+        return $query->where('accepted', false);
+    }
+
+    public function scopeUsingRequestQueryBuilder(): QueryBuilder
+    {
+        return QueryBuilder::for(self::class)
+            ->allowedFilters(
+                [
+                    'first_name',
+                    'second_name',
+                    'family_name',
+                    'uuid'
+                ]
+            )->allowedSorts(
+                [
+                    'first_name',
+                    'second_name',
+                    'family_name',
+                    'uuid'
+                ]
+            );
+    }
 }
